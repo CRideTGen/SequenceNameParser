@@ -6,18 +6,25 @@ from typing import Protocol
 
 @dataclass
 class FileParts:
-    prefix: str
-    sample_name: str
-    s_part: str
-    read_direction: str
-    suffix: str
+    prefix: list[str]
+    sample_name: list[str]
+    s_part: list[str]
+    read_direction: list[str]
+    suffix: list[str]
 
-    def __init__(self, filename):
-        self.prefix = self.get_prefix(filename)
-        self.sample_name = self.get_sample_name(filename)
-        self.s_part = self.get_s_part(filename)
-        self.read_direction = self.get_read_direction(filename)
-        self.suffix = self.get_suffix(filename)
+    def __init__(self):
+        self.prefix = list()
+        self.sample_name = list()
+        self.s_part = list()
+        self.read_direction = list()
+        self.suffix = list()
+
+    def parse_file(self, filename):
+        self.prefix.append(self.get_prefix(filename))
+        self.sample_name.append(self.get_sample_name(filename))
+        self.s_part.append(self.get_s_part(filename))
+        self.read_direction.append(self.get_read_direction(filename))
+        self.suffix.append(self.get_suffix(filename))
 
     def get_prefix(self, filename: str) -> str:
         match = re.search(r"(.*-)[0-9A-Za-z]_", filename)
@@ -43,7 +50,7 @@ class FileParts:
 class FileType(Protocol):
     file_dir: Path
     file_names: dict[str, list[str]]
-    filename_parts: list[FileParts]
+    filename_parts: dict[str, FileParts]
 
     def gather_file_names(self, keyword: str) -> None:
         ...
@@ -60,7 +67,7 @@ class PairedEndIllumina:
             raise ValueError(f"{self.file_dir} is not a valid directory.")
 
         self.file_names = dict()
-        self.file_parts = list()
+        self.file_parts = dict()
 
     def gather_file_names(self, keyword: str = None) -> None:
         if keyword:
@@ -78,4 +85,6 @@ class PairedEndIllumina:
 
     def parse_file_names(self):
 
-        pass
+        for forward, reverse in zip(self.file_names["forward_reads"], self.file_names["reverse_reads"]):
+            self.file_parts["forward_reads"].parse_file(forward)
+            self.file_parts["reverse_reads"].parse_file(reverse)
